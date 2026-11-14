@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101827">
+<title>JLPT N3 Study Progress — Nov 14–27</title>
+<link rel="icon" type="image/png" href="./774japan_100320.ico">
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#131e30;--panel2:#19263b;--text:#edf3ff;--muted:#9aabc4;--line:#2a3a54;--blue:#78a9ff;--green:#5bd6a0;--orange:#ffbd69;--red:#ff7f88}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#0b1220,#111c2d 65%,#101827);color:var(--text);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1050px;margin:auto;padding:26px 18px 60px}h1{font-size:clamp(25px,4vw,36px);margin:0 0 6px}h2{font-size:20px;margin:0 0 14px}h3{font-size:16px;margin:0 0 8px}.sub,.muted{color:var(--muted)}.sub{margin:0 0 22px}
+.panel{background:rgba(19,30,48,.94);border:1px solid var(--line);border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 10px 30px #0002}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+button{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:10px 14px;border-radius:10px;font-weight:650;cursor:pointer}
+button.primary{background:#315b9c;border-color:#4779bd}button.danger{border-color:#82434b;color:#ffc1c5}button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.stat{background:var(--panel2);padding:14px;border-radius:12px}.big{font-size:27px;font-weight:800}.bar{height:10px;background:#26364d;border-radius:99px;overflow:hidden;margin:9px 0}.bar span{display:block;height:100%;background:linear-gradient(90deg,#5b9cff,#5bd6a0);width:0%;transition:width .2s}
+.task{display:flex;gap:11px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}.task:last-child{border:0}.task input{width:19px;height:19px;accent-color:#68b6ff;margin-top:3px;flex:none}.task strong{display:block}.task small{display:block;color:var(--muted);margin-top:2px}
+.pill{display:inline-block;padding:3px 8px;border-radius:99px;background:#263b59;color:#c9ddff;font-size:12px;margin-left:5px}
+select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px}
+.trackrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:13px 0}.trackrow .bar{grid-column:1/-1;margin:0}.trackrow b{font-variant-numeric:tabular-nums}
+.note{background:#1d2d43;border-left:3px solid var(--blue);padding:11px 13px;border-radius:8px;color:#dce8fa}
+footer{color:var(--muted);font-size:12px;margin-top:20px}
+@media(max-width:560px){main{padding:18px 12px 40px}.panel{padding:14px}.top{align-items:flex-start}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div><h1>JLPT N3 Study Progress</h1><p class="sub">November 14–27 · Daily checklist + cumulative target tracker</p></div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button id="langBtn">မြန်မာ</button>
+    <button class="danger" id="resetBtn">
+        Reset today’s checklist
+    </button>
+</div>
+  </div>
+
+  <section class="panel">
+    <div class="top"><div><h2>Today’s progress</h2><div class="muted" id="todayLabel"></div></div><div class="big" id="dailyPercent">0%</div></div>
+    <div class="bar"><span id="dailyBar"></span></div>
+    <div class="muted" id="dailyCount">0 of 8 tasks completed</div>
+  </section>
+
+  <section class="panel">
+    <h2>November 27 completion tracker</h2>
+    <p class="muted">This is cumulative. Daily reset will NOT reduce these totals. Unticking a task before resetting will subtract that task’s amount.</p>
+    <div id="cumulative"></div>
+    <div class="note">The tracker counts completed study targets, not just pages opened. If you tick N3 Kanji, it adds today’s planned 24 kanji. Untick it and 24 is removed.</div>
+  </section>
+
+  <section class="panel">
+    <div class="top"><h2>Daily checklist</h2><label class="muted">Study date&nbsp;
+      <select id="daySelect"></select>
+    </label></div>
+    <p class="muted">Tick an item only after finishing it. Changing the date loads that date’s saved checklist.</p>
+    <div id="tasks"></div>
+  </section>
+
+  <section class="panel">
+    <h2>How the save / reset works</h2>
+    <ul class="muted">
+      <li>Your ticks and cumulative totals are saved in this browser automatically.</li>
+      <li>“Reset today’s checklist” clears only the selected day’s ticks. The November 27 totals stay unchanged.</li>
+      <li>If you untick an item, its amount is removed from the cumulative tracker.</li>
+      <li>Use the same browser and do not clear this site’s browser data, or local saved progress may be lost.</li>
+    </ul>
+  </section>
+  <footer>Saved locally on this device using browser storage. This page works offline after you save the HTML file.</footer>
+</main>
+<script>
+const KEY = "jlpt_n3_progress_nov2026_v1";
+
+let currentLang = localStorage.getItem("jlpt_language") || "en";
+
+const translations = {
+    en: {
+        title: "JLPT N3 Study Progress",
+        subtitle: "November 14–27 · Daily checklist + cumulative target tracker",
+        reset: "Reset today's checklist",
+        daily: "Today's progress",
+        cumulative: "November 27 completion tracker",
+        cumulativeDesc: "This is cumulative. Daily reset will NOT reduce these totals. Unticking a task will subtract its amount.",
+        checklist: "Daily checklist",
+        studyDate: "Study date",
+        checklistDesc: "Tick an item only after finishing it. Changing the date loads that date's saved checklist.",
+        saveTitle: "How the save / reset works",
+        save1: "Your ticks and cumulative totals are saved automatically in this browser.",
+        save2: "Daily reset clears only that day's ticks. November 27 totals stay unchanged.",
+        save3: "Unticking an item removes its amount from the cumulative tracker.",
+        save4: "Use the same browser and don't clear its saved data.",
+        footer: "Saved locally on this device using browser storage.",
+        confirm: "Clear only this day's checklist? Cumulative kanji totals will stay as they are.",
+        n3: "N3 Kanji — 24 new kanji",
+        n3d: "Meaning + common readings + 1–2 vocabulary examples; self-test.",
+        n4: "N4 Kanji — planned review",
+        n4d: "15 kanji/day, final day: 5 kanji.",
+        vocab: "N3 Vocabulary — 40–50 words",
+        vocabd: "Learn readings and meanings together; review difficult words.",
+        grammar: "N3 Grammar — 2–3 points",
+        grammard: "Meaning, pattern, examples, similar grammar, then practise.",
+        grammarq: "Grammar exercises — 10–15 questions",
+        grammarqd: "Check why each wrong answer is wrong.",
+        review: "Review yesterday's kanji and vocabulary",
+        reviewd: "Recall without looking first; revisit difficult items.",
+        questions: "Old questions — 15–40 questions",
+        questionsd: "Practise vocabulary, grammar, reading and listening.",
+        listening: "Listening — 20 minutes",
+        listeningd: "Listen actively and replay difficult parts.",
+        counted: "Counted: ",
+        adds: "Adds: ",
+        completed: "tasks completed"
+    },
+
+    my: {
+        title: "JLPT N3 စာလေ့လာမှု မှတ်တမ်း",
+        subtitle: "နိုဝင်ဘာ ၁၄–၂၇ · နေ့စဉ် Checklist နှင့် စုစုပေါင်း Progress",
+        reset: "ဒီနေ့ Checklist ပြန်စမယ်",
+        daily: "ဒီနေ့ လေ့လာမှု တိုးတက်မှု",
+        cumulative: "နိုဝင်ဘာ ၂၇ အတွက် စုစုပေါင်း Progress",
+        cumulativeDesc: "ဒီ Tracker က စုစုပေါင်းတိုးတက်မှုကို မှတ်တမ်းတင်ပေးပါတယ်။ Daily Reset လုပ်လည်း ဒီစုစုပေါင်းက မပျောက်ပါဘူး။ Tick ဖြုတ်လိုက်ရင်တော့ သက်ဆိုင်ရာအရေအတွက် လျော့သွားပါမယ်။",
+        checklist: "နေ့စဉ် လုပ်ဆောင်ရမယ့်အရာများ",
+        studyDate: "လေ့လာမယ့်ရက်",
+        checklistDesc: "ပြီးဆုံးသွားတဲ့အလုပ်ကိုသာ Tick လုပ်ပါ။ ရက်ပြောင်းလိုက်ရင် အဲဒီရက်အတွက် သိမ်းထားတဲ့ Checklist ကို ပြပေးပါမယ်။",
+        saveTitle: "Save / Reset ဘယ်လိုအလုပ်လုပ်သလဲ",
+        save1: "Tick လုပ်ထားတာတွေနဲ့ စုစုပေါင်း Progress တွေကို Browser ထဲမှာ အလိုအလျောက်သိမ်းပေးပါတယ်။",
+        save2: "Daily Reset က အဲဒီနေ့ရဲ့ Checklist ကိုပဲ ရှင်းပေးပါတယ်။ နိုဝင်ဘာ ၂၇ စုစုပေါင်း Tracker ကို မထိခိုက်ပါဘူး။",
+        save3: "Tick ဖြုတ်လိုက်ရင် စုစုပေါင်း Tracker ထဲက အရေအတွက်ကို ပြန်နုတ်ပေးပါတယ်။",
+        save4: "Browser တစ်ခုတည်းကိုပဲ အသုံးပြုပါ။ Browser Data မရှင်းပါနဲ့။",
+        footer: "ဒီစက်ရဲ့ Browser Storage ထဲမှာ အချက်အလက်တွေ သိမ်းထားပါတယ်။",
+        confirm: "ဒီနေ့ Checklist ကိုပဲ ရှင်းမှာပါ။ စုစုပေါင်း Kanji အရေအတွက်ကို မပြောင်းပါဘူး။ ဆက်လုပ်မှာလား?",
+        n3: "N3 Kanji — အသစ် ၂၄ လုံး",
+        n3d: "အဓိပ္ပာယ်၊ အရေးကြီးတဲ့ Reading နဲ့ Vocabulary ဥပမာ ၁–၂ လုံး လေ့လာပြီး ကိုယ့်ကိုယ်ကို ပြန်စစ်ပါ။",
+        n4: "N4 Kanji — ပြန်လည်လေ့လာခြင်း",
+        n4d: "တစ်နေ့ ၁၅ လုံး၊ နောက်ဆုံးနေ့မှာ ၅ လုံး။",
+        vocab: "N3 Vocabulary — စကားလုံး ၄၀–၅၀",
+        vocabd: "Reading နဲ့ အဓိပ္ပာယ်ကို တွဲမှတ်ပါ။ ခက်ခဲတဲ့စကားလုံးတွေ ပြန်လေ့လာပါ။",
+        grammar: "N3 Grammar — ၂–၃ ခု",
+        grammard: "အဓိပ္ပာယ်၊ ပုံစံ၊ ဥပမာနဲ့ ဆင်တူတဲ့ Grammar တွေကို လေ့လာပြီး လေ့ကျင့်ပါ။",
+        grammarq: "Grammar လေ့ကျင့်ခန်း — ၁၀–၁၅ ပုဒ်",
+        grammarqd: "မှားသွားတဲ့အဖြေတိုင်း ဘာကြောင့်မှားလဲ ပြန်စစ်ပါ။",
+        review: "မနေ့က Kanji နဲ့ Vocabulary ပြန်လေ့လာပါ",
+        reviewd: "စာအုပ်မကြည့်ဘဲ အရင်ပြန်ဖြေပါ။ မမှတ်မိတာတွေကို ပြန်လေ့လာပါ။",
+        questions: "Old Questions — ၁၅–၄၀ ပုဒ်",
+        questionsd: "Vocabulary၊ Grammar၊ Reading နဲ့ Listening လေ့ကျင့်ပါ။",
+        listening: "Listening — မိနစ် ၂၀",
+        listeningd: "သေချာနားထောင်ပြီး နားမလည်တဲ့အပိုင်းတွေကို ပြန်နားထောင်ပါ။",
+        counted: "ထည့်တွက်ပြီး: ",
+        adds: "ပေါင်းထည့်မည်: ",
+        completed: "ခုပြီးပါပြီ"
+    }
+};
+
+const days = Array.from({length:14},(_,i)=>`2026-11-${String(14+i).padStart(2,"0")}`);
+const dailyTasks = [
+  {id:"n3", title:"N3 Kanji — 24 new kanji", detail:"Meaning + common readings + 1–2 vocabulary examples; self-test.", amount:24},
+  {id:"n4", title:"N4 Kanji — planned review", detail:"Nov 14–26: 15 kanji/day · Nov 27: final 5 kanji.", amountForDay:d=>d==="2026-11-27"?5:15},
+  {id:"vocab", title:"N3 Vocabulary — 40–50 words", detail:"Learn reading and meaning together; review difficult words.", amount:0},
+  {id:"grammar", title:"N3 Grammar — 2–3 points", detail:"Meaning, pattern, examples, similar grammar, then practise.", amount:0},
+  {id:"grammarq", title:"Grammar exercises — 10–15 questions", detail:"Check why each wrong answer is wrong.", amount:0},
+  {id:"review", title:"Review yesterday’s kanji and vocabulary", detail:"Recall without looking first; revisit red/yellow items.", amount:0},
+  {id:"questions", title:"Old questions — 15–40 questions", detail:"Rotate vocabulary, grammar, reading and listening.", amount:0},
+  {id:"listening", title:"Listening — 20 minutes", detail:"Listen actively; replay parts you did not understand.", amount:0}
+];
+const goals = [
+  {id:"n3",label:"N3 Kanji",goal:336,unit:"kanji"},
+  {id:"n4",label:"N4 Kanji",goal:200,unit:"kanji"}
+];
+let state = load();
+function blank(){return {daily:{},totals:{n3:0,n4:0}}}
+function load(){try{return Object.assign(blank(),JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){return blank()}}
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function selectedDay(){return document.getElementById("daySelect").value}
+function dayTicks(day){if(!state.daily[day])state.daily[day]={};return state.daily[day]}
+function amount(task,day){return task.amountForDay?task.amountForDay(day):task.amount}
+function renderTasks(){
+ const day=selectedDay(), ticks=dayTicks(day), root=document.getElementById("tasks");root.innerHTML="";
+ dailyTasks.forEach(task=>{
+  const checked=!!ticks[task.id], amt=amount(task,day);
+  const row=document.createElement("label");row.className="task";
+  const cb=document.createElement("input");cb.type="checkbox";cb.checked=checked;
+  cb.addEventListener("change",()=>{
+   ticks[task.id]=cb.checked;
+   if(task.id==="n3"||task.id==="n4")state.totals[task.id]=Math.max(0,(state.totals[task.id]||0)+(cb.checked?amt:-amt));
+   save();render();
+  });
+  const content=document.createElement("span");
+  const title=document.createElement("strong");title.textContent =
+    translations[currentLang][task.id] || task.title;
+  if(amt>0){const pill=document.createElement("span");pill.className="pill";pill.textContent =
+    (checked
+        ? translations[currentLang].counted
+        : translations[currentLang].adds
+    ) + amt;title.appendChild(pill)}
+  const detail=document.createElement("small");detail.textContent =
+    translations[currentLang][task.id + "d"] || task.detail;
+  content.append(title,detail);row.append(cb,content);root.append(row);
+ });
+}
+function renderCumulative(){
+ const root=document.getElementById("cumulative");root.innerHTML="";
+ goals.forEach(g=>{
+  const total=state.totals[g.id]||0,pct=Math.min(100,total/g.goal*100);
+  const row=document.createElement("div");row.className="trackrow";
+  const name=document.createElement("strong");name.textContent=g.label;
+  const val=document.createElement("b");val.textContent=`${total} / ${g.goal} ${g.unit}`;
+  const bar=document.createElement("div");bar.className="bar";const fill=document.createElement("span");fill.style.width=pct+"%";bar.append(fill);
+  row.append(name,val,bar);root.append(row);
+ });
+}
+function renderDaily(){
+ const ticks=dayTicks(selectedDay()),done=dailyTasks.filter(t=>ticks[t.id]).length,pct=Math.round(done/dailyTasks.length*100);
+ document.getElementById("dailyPercent").textContent=pct+"%";
+ document.getElementById("dailyBar").style.width=pct+"%";
+ document.getElementById("dailyCount").textContent=`${done} of ${dailyTasks.length} tasks completed`;
+ document.getElementById("todayLabel").textContent=new Date(selectedDay()+"T12:00:00").toLocaleDateString(undefined,{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+}
+function render(){renderTasks();renderCumulative();renderDaily()}
+const select=document.getElementById("daySelect");
+days.forEach(d=>{const o=document.createElement("option");o.value=d;o.textContent=new Date(d+"T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"});select.append(o)});
+const today=new Date();const iso=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+select.value=days.includes(iso)?iso:days[0];select.addEventListener("change",render);
+document.getElementById("resetBtn").addEventListener("click",()=>{
+ const day=selectedDay();if(!confirm("Clear only this day’s checklist? Cumulative kanji totals will stay as they are."))return;
+ state.daily[day]={};save();render();
+});
+
+function changeLanguage() {
+    currentLang = currentLang === "en" ? "my" : "en";
+
+    localStorage.setItem("jlpt_language", currentLang);
+
+    updateLanguage();
+    render();
+}
+
+function updateLanguage() {
+    const t = translations[currentLang];
+
+    document.querySelector("h1").textContent = t.title;
+    document.querySelector(".sub").textContent = t.subtitle;
+
+    document.getElementById("resetBtn").textContent = t.reset;
+    document.getElementById("langBtn").textContent =
+        currentLang === "en" ? "မြန်မာ" : "English";
+
+    const headings = document.querySelectorAll(".panel h2");
+
+    headings[0].textContent = t.daily;
+    headings[1].textContent = t.cumulative;
+    headings[2].textContent = t.checklist;
+    headings[3].textContent = t.saveTitle;
+
+    document.querySelectorAll(".panel .muted")[1].textContent =
+        t.cumulativeDesc;
+
+    document.querySelectorAll(".panel .muted")[2].textContent =
+        t.checklistDesc;
+
+    const saveList = document.querySelectorAll(".panel ul li");
+
+    [t.save1, t.save2, t.save3, t.save4].forEach((text, i) => {
+        saveList[i].textContent = text;
+    });
+
+    document.querySelector("footer").textContent = t.footer;
+
+    document.getElementById("resetBtn").onclick = resetToday;
+}
+
+function resetToday() {
+    const day = selectedDay();
+
+    if (!confirm(translations[currentLang].confirm)) return;
+
+    state.daily[day] = {};
+    save();
+    render();
+}
+
+document.getElementById("langBtn").addEventListener(
+    "click",
+    changeLanguage
+);
+
+document.getElementById("resetBtn").onclick = resetToday;
+
+updateLanguage();
+
+render();
+</script>
+</body>
+</html>
